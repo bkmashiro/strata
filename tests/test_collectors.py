@@ -31,6 +31,11 @@ class TestEnvVars:
         assert _is_sensitive("AWS_SECRET_ACCESS_KEY") is True
         assert _is_sensitive("HOME") is False
         assert _is_sensitive("PATH") is False
+        # Regression: "KEY" substring used to cause false positives
+        assert _is_sensitive("KEYBOARD") is False
+        assert _is_sensitive("KEYRING") is False
+        assert _is_sensitive("MONKEY_PATCH") is False
+        assert _is_sensitive("DONKEY") is False
 
     def test_masking(self):
         assert _mask("abc") == "****"

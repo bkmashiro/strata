@@ -17,9 +17,11 @@ _SENSITIVE_PATTERNS = (
     "SECRET",
     "PASSWORD",
     "TOKEN",
-    "KEY",
+    "_KEY",      # matches API_KEY, SECRET_KEY, PRIVATE_KEY — not KEYBOARD/KEYRING
+    "APIKEY",    # matches APIKEY without underscore
     "CREDENTIAL",
     "PRIVATE",
+    "AUTH",
 )
 
 
