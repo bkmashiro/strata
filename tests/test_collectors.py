@@ -204,8 +204,9 @@ class TestPackages:
         collector = PackageCollector()
         result = collector.collect()
         assert isinstance(result, dict)
-        # Python should always be available
-        assert "python3" in result or "git" in result
+        # runtimes sub-dict should exist and contain git or python3
+        runtimes = result.get("runtimes", result)
+        assert "python3" in runtimes or "git" in runtimes
 
     def test_diff_entry_installed(self):
         desc = PackageCollector.diff_entry("node", None, "v18.0.0")
