@@ -114,7 +114,7 @@ class FileCollector(Collector):
                 prefix, suffix = pattern.split("*", 1)
                 if name.startswith(prefix) and name.endswith(suffix):
                     return True
-            elif name == pattern or name.startswith(pattern):
+            elif name == pattern:
                 return True
         return False
 

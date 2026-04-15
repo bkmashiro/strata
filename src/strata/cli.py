@@ -29,6 +29,7 @@ console = Console()
 COLLECTOR_NAMES = [
     "envvars", "processes", "network", "files",
     "disk", "system", "docker", "packages",
+    "gitrepos", "crontab", "ssh_keys", "cloud_config", "systemd",
 ]
 
 
