@@ -179,6 +179,72 @@ class SnapshotStore:
                     })
         return results
 
+    def find_by_git_commit(self, commit_hash: str) -> dict[str, Any] | None:
+        """Find a snapshot by git commit hash (full or short).
+
+        Searches the metadata JSON for matching git_commit or git_commit_short.
+        """
+        # Try full hash first
+        rows = self._conn.execute(
+            """
+            SELECT id, metadata FROM snapshots
+            WHERE metadata LIKE ?
+            ORDER BY timestamp DESC
+            """,
+            (f'%"git_commit": "{commit_hash}"%',),
+        ).fetchall()
+
+        if not rows:
+            # Try short hash
+            rows = self._conn.execute(
+                """
+                SELECT id, metadata FROM snapshots
+                WHERE metadata LIKE ?
+                ORDER BY timestamp DESC
+                """,
+                (f'%"git_commit_short": "{commit_hash}"%',),
+            ).fetchall()
+
+        if not rows:
+            # Prefix match on full commit hash
+            rows = self._conn.execute(
+                "SELECT id, metadata FROM snapshots ORDER BY timestamp DESC",
+            ).fetchall()
+            for row in rows:
+                import json as _json
+                meta = _json.loads(row["metadata"]) if row["metadata"] else {}
+                full = meta.get("git_commit", "")
+                if full and full.startswith(commit_hash):
+                    return self.get_snapshot(row["id"])
+
+        if rows:
+            return self.get_snapshot(rows[0]["id"])
+        return None
+
+    def get_git_snapshots(self) -> list[dict[str, Any]]:
+        """Get all snapshots that have git metadata, newest first."""
+        rows = self._conn.execute(
+            """
+            SELECT id, label, timestamp, hostname, metadata
+            FROM snapshots
+            WHERE metadata LIKE '%"git_commit"%'
+            ORDER BY timestamp DESC
+            """,
+        ).fetchall()
+
+        results = []
+        for r in rows:
+            meta = json.loads(r["metadata"]) if r["metadata"] else {}
+            if meta.get("git_commit"):
+                results.append({
+                    "id": r["id"],
+                    "label": r["label"],
+                    "timestamp": r["timestamp"],
+                    "hostname": r["hostname"],
+                    "metadata": meta,
+                })
+        return results
+
     def close(self) -> None:
         """Close the database connection."""
         self._conn.close()

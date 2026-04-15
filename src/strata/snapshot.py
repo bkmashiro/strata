@@ -14,6 +14,8 @@ def create_snapshot(
     label: str | None = None,
     collectors: list[str] | None = None,
     file_root: str | None = None,
+    include_git: bool = True,
+    git_hook: bool = False,
 ) -> dict[str, Any]:
     """Create a new environment snapshot.
 
@@ -23,6 +25,8 @@ def create_snapshot(
         collectors: Optional list of collector names to use.
             If None, uses all available collectors.
         file_root: Optional root directory for the file collector.
+        include_git: Whether to detect and attach git context (default True).
+        git_hook: If True, running from a git hook. Auto-labels as git:<short_hash>.
 
     Returns:
         The saved snapshot dict including its ID.
@@ -51,10 +55,30 @@ def create_snapshot(
         except Exception as e:
             errors[cls.name] = str(e)
 
-    metadata = {
+    metadata: dict[str, Any] = {
         "collectors": collector_names_used,
         "errors": errors,
     }
+
+    # Capture git context if requested
+    if include_git:
+        try:
+            from strata.git_integration import get_git_context
+            git_ctx = get_git_context(file_root or ".")
+            if git_ctx:
+                metadata["git_commit"] = git_ctx["commit"]
+                metadata["git_commit_short"] = git_ctx["commit_short"]
+                metadata["git_branch"] = git_ctx["branch"]
+                metadata["git_message"] = git_ctx["message"]
+                metadata["git_repo"] = git_ctx["repo_root"]
+                metadata["git_repo_name"] = git_ctx["repo_name"]
+                metadata["git_is_dirty"] = git_ctx["is_dirty"]
+
+                # Auto-label from git hook
+                if git_hook and not label:
+                    label = f"git:{git_ctx['commit_short']}"
+        except Exception:
+            pass  # Silently skip git context on any error
 
     snapshot_id = store.save_snapshot(
         data=data,

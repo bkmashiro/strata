@@ -205,6 +205,78 @@ strata --db /path/to/custom.db snap
 strata --db /path/to/custom.db diff 1 2
 ```
 
+## Git Integration
+
+Strata can automatically link snapshots to git commits, giving you a combined view of your source code changes and environment state.
+
+### Automatic Detection
+
+By default, when you run `strata snap` inside a git repository, Strata silently captures the current commit hash, branch, message, and dirty state. This metadata is stored alongside the snapshot and requires no extra flags.
+
+```bash
+# Git context is captured automatically
+strata snap -l "pre-deploy"
+```
+
+To skip git detection (e.g., for performance), use `--no-git`:
+
+```bash
+strata snap --no-git
+```
+
+### Post-Commit Hook
+
+Install a git hook that automatically takes a snapshot after every commit:
+
+```bash
+strata hooks install          # install in current repo
+strata hooks install --repo /path/to/repo
+strata hooks status           # check if installed
+strata hooks uninstall        # remove
+```
+
+The hook runs `strata snap --git-hook --quiet` which auto-labels the snapshot as `git:<short_hash>`. It uses `|| true` so it never blocks your commits.
+
+### Diffing by Commit
+
+Use `git:<hash>` to reference snapshots by their associated commit:
+
+```bash
+# Diff two commits' environment snapshots
+strata diff git:abc1234 git:def5678
+
+# Diff a commit against latest
+strata diff git:abc1234 latest
+
+# Both short and full hashes work
+strata diff git:abc1234ef5678... git:def5678
+```
+
+### Git Log
+
+See your git history merged with strata snapshots:
+
+```bash
+strata gitlog
+strata gitlog -n 50
+```
+
+Commits with associated snapshots are marked with a green dot and the snapshot ID.
+
+### Bisect
+
+Track how a specific value changed across git-linked snapshots:
+
+```bash
+# How did the python3 version change across commits?
+strata bisect packages python3
+
+# When did a specific env var change?
+strata bisect envvars DATABASE_URL
+```
+
+This shows a chronological table of the value at each commit, highlighting where changes occurred.
+
 ## Architecture
 
 ```
